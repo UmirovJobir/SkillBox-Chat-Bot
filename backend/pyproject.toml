@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "habit-tracker-backend"
+version = "0.1.0"
+description = "Habit Tracker Bot — Backend (FastAPI)"
+authors = ["Jobir Umirov <jobirumirov.python@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.110.0"        # веб-фреймворк для API
+uvicorn = {extras = ["standard"], version = "^0.29.0"}  # ASGI сервер для FastAPI
+sqlalchemy = "^2.0.0"       # ORM для работы с БД
+alembic = "^1.13.0"         # управление миграциями БД
+psycopg2-binary = "^2.9.9"  # драйвер PostgreSQL для Python
+pyjwt = "^2.8.0"            # создание и проверка JWT токенов
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}  # хеширование паролей
+python-multipart = "^0.0.9" # нужен FastAPI для form-data
+pydantic-settings = "^2.2.0" # загрузка настроек из .env файла
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

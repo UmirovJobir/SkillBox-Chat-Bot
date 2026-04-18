@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "habit-tracker-bot"
+version = "0.1.0"
+description = "Habit Tracker Bot — Telegram Bot"
+authors = ["Jobir Umirov <jobirumirov.python@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pytelegrambotapi = "^4.20.0"  # библиотека для Telegram Bot API
+requests = "^2.31.0"          # отправляет HTTP запросы к нашему backend
+apscheduler = "^3.10.4"       # планировщик: запускает задачи по расписанию
+python-dotenv = "^1.0.0"      # читает переменные из .env файла
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
