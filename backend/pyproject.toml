@@ -3,6 +3,7 @@ name = "habit-tracker-backend"
 version = "0.1.0"
 description = "Habit Tracker Bot — Backend (FastAPI)"
 authors = ["Jobir Umirov <jobirumirov.python@gmail.com>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
