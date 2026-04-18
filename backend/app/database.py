@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from .config import settings
 
@@ -14,7 +14,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base — базовый класс для всех моделей
 # Все модели наследуют от него: class User(Base):
-Base = declarative_base()
+class Base(DeclarativeBase):
+    """Базовый класс для всех ORM моделей."""
+    pass
 
 
 def get_database_session():
