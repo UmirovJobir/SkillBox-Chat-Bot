@@ -4,7 +4,8 @@ from typing import Optional
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,10 +13,13 @@ from .config import settings
 from .database import get_database_session
 from .models.user_model import User
 
-# CryptContext — контекст для хеширования паролей
-# schemes=["bcrypt"] — используем алгоритм bcrypt (самый надёжный для паролей)
-# deprecated="auto" — автоматически обновлять старые хеши
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# PasswordHash — главный объект pwdlib для хеширования и проверки паролей.
+# Принимает кортеж хешеров; первый считается активным (используется для hash()).
+# BcryptHasher() — алгоритм bcrypt: добавляет случайную соль, необратим,
+# устойчив к брутфорсу за счёт настраиваемой вычислительной стоимости (rounds).
+# Пример: password_hash.hash("secret") → "$2b$12$abc...xyz"
+#          password_hash.verify("secret", "$2b$12$abc...xyz") → True
+password_hash = PasswordHash((BcryptHasher(),))
 
 # HTTPBearer — схема авторизации через заголовок "Authorization: Bearer <token>"
 # FastAPI автоматически извлекает токен из заголовка
@@ -23,25 +27,11 @@ bearer_scheme = HTTPBearer()
 
 
 def hash_password(plain_password: str) -> str:
-    """
-    Хеширует пароль перед сохранением в БД.
-
-    bcrypt добавляет случайную "соль" к паролю, поэтому:
-    hash_password("secret") → "$2b$12$abc123..." (каждый раз разный)
-    Обратное преобразование невозможно — нельзя получить пароль из хеша.
-    """
-    return password_context.hash(plain_password)
+    return password_hash.hash(plain_password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Проверяет, соответствует ли пароль хешу.
-
-    verify() сам добавляет соль и сравнивает хеши.
-    verify_password("secret", "$2b$12$abc123...") → True
-    verify_password("wrong",  "$2b$12$abc123...") → False
-    """
-    return password_context.verify(plain_password, hashed_password)
+    return password_hash.verify(plain_password, hashed_password)
 
 
 def create_access_token(user_id: int) -> str:

@@ -1,8 +1,8 @@
 import telebot
 from telebot.types import Message
 
-from .auth_handler import user_tokens
-from ..keyboards.inline_keyboards import build_auth_keyboard, build_main_menu_keyboard
+from handlers.auth_handler import user_tokens
+from keyboards.inline_keyboards import build_auth_keyboard, build_main_menu_keyboard
 
 
 def register_start_handlers(bot: telebot.TeleBot) -> None:

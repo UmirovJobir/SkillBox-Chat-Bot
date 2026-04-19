@@ -13,7 +13,7 @@ sqlalchemy = "^2.0.0"       # ORM для работы с БД
 alembic = "^1.13.0"         # управление миграциями БД
 psycopg2-binary = "^2.9.9"  # драйвер PostgreSQL для Python
 pyjwt = "^2.8.0"            # создание и проверка JWT токенов
-passlib = {extras = ["bcrypt"], version = "^1.7.4"}  # хеширование паролей
+pwdlib = {extras = ["bcrypt"], version = "^0.3.0"}  # хеширование паролей
 python-multipart = "^0.0.9" # нужен FastAPI для form-data
 pydantic-settings = "^2.2.0" # загрузка настроек из .env файла
 

@@ -1,8 +1,8 @@
 import telebot
 from telebot.types import CallbackQuery, Message
 
-from ..keyboards.inline_keyboards import build_auth_keyboard, build_main_menu_keyboard
-from ..services.api_client import api_client
+from keyboards.inline_keyboards import build_auth_keyboard, build_main_menu_keyboard
+from services.api_client import api_client
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ХРАНИЛИЩЕ ТОКЕНОВ

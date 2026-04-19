@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 
 import requests  # библиотека для HTTP запросов
 
-from ..config import BACKEND_URL
+from config import BACKEND_URL
 
 
 class HabitTrackerApiClient:
@@ -16,6 +16,13 @@ class HabitTrackerApiClient:
 
     def __init__(self, base_url: str = BACKEND_URL):
         self.base_url = base_url
+
+    @staticmethod
+    def _safe_json(response: requests.Response) -> Any:
+        try:
+            return response.json()
+        except ValueError:
+            return {}
 
     @staticmethod
     def _build_auth_headers(access_token: str) -> Dict[str, str]:
@@ -46,7 +53,7 @@ class HabitTrackerApiClient:
             },
             timeout=10,  # если backend не ответил за 10 сек → ошибка
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def login_user(
         self,
@@ -59,7 +66,7 @@ class HabitTrackerApiClient:
             json={"telegram_id": telegram_id, "password": password},
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def get_all_habits(self, access_token: str) -> Dict[str, Any]:
         """
@@ -71,7 +78,7 @@ class HabitTrackerApiClient:
             headers=self._build_auth_headers(access_token),
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def create_habit(
         self,
@@ -91,7 +98,7 @@ class HabitTrackerApiClient:
             },
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def update_habit(
         self,
@@ -119,7 +126,7 @@ class HabitTrackerApiClient:
             json=update_payload,
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def delete_habit(self, access_token: str, habit_id: int) -> Dict[str, Any]:
         """DELETE /habits/{habit_id} — удалить привычку. Ответ 204 = без тела."""
@@ -141,7 +148,7 @@ class HabitTrackerApiClient:
             headers=self._build_auth_headers(access_token),
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def set_notification_time(
         self,
@@ -155,7 +162,7 @@ class HabitTrackerApiClient:
             json={"notification_time": notification_time},
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
     def get_current_user(self, access_token: str) -> Dict[str, Any]:
         """GET /users/me — профиль пользователя (нужен планировщику)."""
@@ -164,7 +171,7 @@ class HabitTrackerApiClient:
             headers=self._build_auth_headers(access_token),
             timeout=10,
         )
-        return {"status_code": response.status_code, "data": response.json()}
+        return {"status_code": response.status_code, "data": self._safe_json(response)}
 
 
 # Один глобальный экземпляр — все хендлеры используют его
