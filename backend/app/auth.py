@@ -7,7 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
 from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
 from .database import get_database_session
@@ -55,9 +55,9 @@ def create_access_token(user_id: int) -> str:
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
-def get_current_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    database_session: Session = Depends(get_database_session),
+    database_session: AsyncSession = Depends(get_database_session),
 ) -> User:
     """
     FastAPI Dependency: извлекает текущего пользователя из JWT токена.
@@ -100,7 +100,8 @@ def get_current_user(
         )
 
     # Находим пользователя в БД по ID из токена
-    found_user = database_session.scalars(select(User).where(User.id == user_id)).first()
+    result = await database_session.execute(select(User).where(User.id == user_id))
+    found_user = result.scalars().first()
     if found_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

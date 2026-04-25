@@ -2,14 +2,14 @@ from datetime import date
 from typing import List, Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.habit_model import Habit, HabitLog
 from ..schemas.habit_schema import HabitCreate, HabitUpdate
 
 
-def create_habit(
-    database_session: Session,
+async def create_habit(
+    database_session: AsyncSession,
     user_id: int,
     habit_data: HabitCreate,
 ) -> Habit:
@@ -22,13 +22,13 @@ def create_habit(
         # total_completions=0, is_active=True — из default в модели
     )
     database_session.add(new_habit)
-    database_session.commit()
-    database_session.refresh(new_habit)
+    await database_session.commit()
+    await database_session.refresh(new_habit)
     return new_habit
 
 
-def get_active_habits_for_user(
-    database_session: Session,
+async def get_active_habits_for_user(
+    database_session: AsyncSession,
     user_id: int,
 ) -> List[Habit]:
     """
@@ -36,11 +36,12 @@ def get_active_habits_for_user(
     is_active=False → привычка выработана, не показывать.
     """
     stmt = select(Habit).where(Habit.user_id == user_id, Habit.is_active == True)
-    return list(database_session.scalars(stmt).all())
+    result = await database_session.execute(stmt)
+    return list(result.scalars().all())
 
 
-def get_habit_by_id(
-    database_session: Session,
+async def get_habit_by_id(
+    database_session: AsyncSession,
     habit_id: int,
     user_id: int,
 ) -> Optional[Habit]:
@@ -49,11 +50,12 @@ def get_habit_by_id(
     ВАЖНО: фильтруем по user_id — пользователь не должен видеть чужие привычки!
     """
     stmt = select(Habit).where(Habit.id == habit_id, Habit.user_id == user_id)
-    return database_session.scalars(stmt).first()
+    result = await database_session.execute(stmt)
+    return result.scalars().first()
 
 
-def update_habit(
-    database_session: Session,
+async def update_habit(
+    database_session: AsyncSession,
     habit: Habit,
     update_data: HabitUpdate,
 ) -> Habit:
@@ -67,19 +69,19 @@ def update_habit(
         habit.description = update_data.description
     if update_data.target_completions is not None:
         habit.target_completions = update_data.target_completions
-    database_session.commit()
-    database_session.refresh(habit)
+    await database_session.commit()
+    await database_session.refresh(habit)
     return habit
 
 
-def delete_habit(database_session: Session, habit: Habit) -> None:
+async def delete_habit(database_session: AsyncSession, habit: Habit) -> None:
     """Удаляет привычку. HabitLog удаляются автоматически (cascade в модели)."""
-    database_session.delete(habit)
-    database_session.commit()
+    await database_session.delete(habit)
+    await database_session.commit()
 
 
-def mark_habit_completed_today(
-    database_session: Session,
+async def mark_habit_completed_today(
+    database_session: AsyncSession,
     habit: Habit,
 ) -> HabitLog:
     """
@@ -96,7 +98,8 @@ def mark_habit_completed_today(
 
     # Ищем существующую запись за сегодня
     stmt = select(HabitLog).where(HabitLog.habit_id == habit.id, HabitLog.log_date == today)
-    existing_log: HabitLog | None = database_session.scalars(stmt).first()
+    result = await database_session.execute(stmt)
+    existing_log: HabitLog | None = result.scalars().first()
 
     if existing_log:
         if not existing_log.is_completed:
@@ -105,8 +108,8 @@ def mark_habit_completed_today(
             habit.total_completions += 1
             if habit.total_completions >= habit.target_completions:
                 habit.is_active = False  # привычка выработана!
-            database_session.commit()
-            database_session.refresh(existing_log)
+            await database_session.commit()
+            await database_session.refresh(existing_log)
         return existing_log  # уже было выполнено — возвращаем как есть
 
     # Записи за сегодня нет — создаём новую
@@ -119,13 +122,13 @@ def mark_habit_completed_today(
     habit.total_completions += 1
     if habit.total_completions >= habit.target_completions:
         habit.is_active = False  # цель достигнута — 21 день выполнено!
-    database_session.commit()
-    database_session.refresh(new_log)
+    await database_session.commit()
+    await database_session.refresh(new_log)
     return new_log
 
 
-def check_habit_completed_today(
-    database_session: Session,
+async def check_habit_completed_today(
+    database_session: AsyncSession,
     habit_id: int,
 ) -> bool:
     """
@@ -138,5 +141,5 @@ def check_habit_completed_today(
         HabitLog.log_date == today,
         HabitLog.is_completed == True,
     )
-    log = database_session.scalars(stmt).first()
-    return log is not None  # True если нашли запись, False если нет
+    result = await database_session.execute(stmt)
+    return result.scalars().first() is not None

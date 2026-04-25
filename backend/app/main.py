@@ -30,7 +30,7 @@ application.include_router(users_router)   # /users/me и /users/me/notification
 
 
 @application.get("/health", tags=["Health"])
-def health_check():
+async def health_check():
     """
     GET /health — проверка работоспособности.
     Docker и другие сервисы используют это для healthcheck.

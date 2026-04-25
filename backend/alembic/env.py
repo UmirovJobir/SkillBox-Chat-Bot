@@ -1,8 +1,8 @@
+import asyncio
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 
@@ -17,8 +17,7 @@ config = context.config
 
 database_url = os.environ.get(
     "DATABASE_URL",
-    # Значение по умолчанию — для локальной разработки без Docker
-    "postgresql://postgres:123@localhost:5433/habit_tracker_db",
+    "postgresql+asyncpg://postgres:123@localhost:5433/habit_tracker_db",
 )
 config.set_main_option("sqlalchemy.url", database_url)
 
@@ -58,7 +57,12 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+    with context.begin_transaction():
+        context.run_migrations()
 
+
+def do_run_migrations(connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
 
@@ -70,19 +74,15 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Alembic запускает async engine через asyncio.run() и connection.run_sync()
+    # Это позволяет использовать один asyncpg драйвер и для миграций, и для приложения.
+    async def run_async_migrations() -> None:
+        engine = create_async_engine(config.get_main_option("sqlalchemy.url"))
+        async with engine.connect() as connection:
+            await connection.run_sync(do_run_migrations)
+        await engine.dispose()
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():

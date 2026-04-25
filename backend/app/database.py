@@ -1,38 +1,37 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
 from .config import settings
 
-# create_engine — создаёт соединение с БД
-# settings.database_url = "postgresql://user:pass@host:port/dbname"
-engine = create_engine(settings.database_url)
+# create_async_engine — создаёт async соединение с БД через asyncpg
+# settings.database_url = "postgresql+asyncpg://user:pass@host:port/dbname"
+engine = create_async_engine(settings.database_url)
 
-# sessionmaker — фабрика сессий
-# autocommit=False — мы сами вызываем session.commit() когда готовы
-# autoflush=False  — не отправлять SQL до commit()
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# async_sessionmaker — фабрика async сессий
+# expire_on_commit=False — не инвалидировать атрибуты объектов после commit().
+# В sync ORM это безопасно (объект перезагружается при следующем обращении),
+# но в async это вызовет ошибку ленивой загрузки — поэтому отключаем.
+AsyncSessionLocal = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 # Base — базовый класс для всех моделей
 # Все модели наследуют от него: class User(Base):
 class Base(DeclarativeBase):
-    """Базовый класс для всех ORM моделей."""
     pass
 
 
-def get_database_session():
+async def get_database_session():
     """
-    Dependency для FastAPI — предоставляет сессию БД для каждого запроса.
+    Async Dependency для FastAPI — предоставляет сессию БД для каждого запроса.
 
-    FastAPI вызывает эту функцию при каждом HTTP запросе.
-    yield — это генератор: код ДО yield выполняется перед запросом,
-    код ПОСЛЕ yield выполняется после (закрывает сессию).
+    async with AsyncSessionLocal() — сессия закрывается автоматически при выходе
+    из контекстного менеджера (даже при исключении). Явный session.close() не нужен.
 
     Использование в роутере:
-        def my_endpoint(db: Session = Depends(get_database_session)):
-            users = db.query(User).all()
+        async def my_endpoint(db: AsyncSession = Depends(get_database_session)):
+            result = await db.execute(select(User))
     """
-    session = SessionLocal()
-    try:
-        yield session        # передаём сессию в роутер
-    finally:
-        session.close()      # закрываем сессию после запроса (даже при ошибке)
+    async with AsyncSessionLocal() as session:
+        yield session
