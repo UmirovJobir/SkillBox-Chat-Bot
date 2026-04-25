@@ -48,7 +48,9 @@ def create_access_token(user_id: int) -> str:
     """
     payload = {
         "sub": str(user_id),  # строка, не число (стандарт JWT)
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes),
+        "exp": datetime.now(timezone.utc) + timedelta(
+            minutes=settings.access_token_expire_minutes
+        ),
     }
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 

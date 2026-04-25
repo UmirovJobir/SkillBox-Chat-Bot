@@ -147,7 +147,8 @@ def register_habits_handlers(bot: telebot.TeleBot) -> None:
         habit_text = (
             f"📌 *{found_habit['title']}*\n\n"
             f"{status_text}\n"
-            f"Прогресс: {found_habit['total_completions']}/{found_habit['target_completions']} дней\n"
+            f"Прогресс: {found_habit['total_completions']}/"
+            f"{found_habit['target_completions']} дней\n"
             f"{progress_bar}"
         )
         if found_habit.get("description"):
@@ -195,7 +196,8 @@ def register_habits_handlers(bot: telebot.TeleBot) -> None:
                 )
                 bot.edit_message_text(
                     f"✅ *{updated_habit['title']}* — выполнено!\n\n"
-                    f"Прогресс: {updated_habit['total_completions']}/{updated_habit['target_completions']} дней\n"
+                    f"Прогресс: {updated_habit['total_completions']}/"
+                    f"{updated_habit['target_completions']} дней\n"
                     f"{progress_bar}",
                     call.message.chat.id,
                     call.message.message_id,
@@ -273,7 +275,8 @@ def register_habits_handlers(bot: telebot.TeleBot) -> None:
             habit = result["data"]
             bot.send_message(
                 message.chat.id,
-                f"✅ Привычка *{habit['title']}* добавлена!\nЦель: {habit['target_completions']} раз.",
+                f"✅ Привычка *{habit['title']}* добавлена!\n"
+                f"Цель: {habit['target_completions']} раз.",
                 parse_mode="Markdown",
                 reply_markup=build_main_menu_keyboard(),
             )
