@@ -1,7 +1,9 @@
 
 import logging
+import os
 from datetime import datetime
 from typing import Dict
+from zoneinfo import ZoneInfo
 
 import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -9,6 +11,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from services.api_client import api_client
 
 logger = logging.getLogger(__name__)
+
+TIMEZONE = os.environ.get("TIMEZONE", "Asia/Tashkent")
 
 
 def send_habit_reminders(
@@ -25,7 +29,7 @@ def send_habit_reminders(
                          Это та же dict что используют хендлеры — общая ссылка!
     """
     # Текущее время в формате "HH:MM" — именно так хранит notification_time в БД
-    current_time = datetime.now().strftime("%H:%M")
+    current_time = datetime.now(ZoneInfo(TIMEZONE)).strftime("%H:%M")
 
     # list(user_tokens.items()) — создаём копию списка пар (id, token)
     # Копия нужна потому что внутри цикла мы можем изменять user_tokens
@@ -118,7 +122,7 @@ def setup_scheduler(
     Возвращаем scheduler чтобы main.py мог вызвать scheduler.shutdown()
     при остановке бота.
     """
-    scheduler = BackgroundScheduler(timezone="UTC")
+    scheduler = BackgroundScheduler(timezone=TIMEZONE)
 
     # add_job — добавляем задачу в планировщик
     scheduler.add_job(

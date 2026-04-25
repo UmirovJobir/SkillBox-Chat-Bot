@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080  # 7 дней
     habit_target_days: int = 21
+    timezone: str = "Asia/Tashkent"
 
     class Config:
         env_file = ".env"  # читать из этого файла
