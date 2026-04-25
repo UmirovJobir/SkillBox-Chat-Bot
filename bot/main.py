@@ -4,9 +4,10 @@ import sys
 import telebot
 
 from config import TELEGRAM_BOT_TOKEN
-from handlers.auth_handler import register_auth_handlers
+from handlers.auth_handler import register_auth_handlers, user_tokens
 from handlers.habits_handler import register_habits_handlers
 from handlers.start_handler import register_start_handlers
+from scheduler import setup_scheduler
 
 # Настройка логирования — все INFO сообщения выводятся в stdout
 # В Docker их можно смотреть через: docker-compose logs -f bot
@@ -35,6 +36,10 @@ def start_bot() -> None:
     register_auth_handlers(bot)
     register_habits_handlers(bot)
 
+    # Запускаем планировщик уведомлений в фоновом потоке
+    # user_tokens — тот же словарь, что используют хендлеры (общая ссылка)
+    scheduler = setup_scheduler(bot, user_tokens)
+
     logger.info("Бот запущен и ждёт сообщений...")
     try:
         # infinity_polling — бесконечный цикл опроса Telegram API
@@ -44,6 +49,7 @@ def start_bot() -> None:
     except KeyboardInterrupt:
         logger.info("Бот остановлен (Ctrl+C).")
     finally:
+        scheduler.shutdown()  # корректно останавливаем планировщик
         logger.info("Планировщик остановлен.")
 
 
