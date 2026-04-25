@@ -130,6 +130,12 @@ def register_auth_handlers(bot: telebot.TeleBot) -> None:
                 "Вы успешно вошли!",
                 reply_markup=build_main_menu_keyboard(),
             )
+        elif result["status_code"] == 404:
+            bot.send_message(
+                message.chat.id,
+                "Вы ещё не зарегистрированы. Нажмите 'Регистрация'.",
+                reply_markup=build_auth_keyboard(),
+            )
         else:
             bot.send_message(
                 message.chat.id,

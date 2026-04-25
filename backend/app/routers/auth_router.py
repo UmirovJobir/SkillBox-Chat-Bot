@@ -61,13 +61,18 @@ def login_user(
     database_session: Session = Depends(get_database_session),
 ):
     """Аутентифицирует пользователя. Возвращает JWT токен."""
+    existing_user = find_user_by_telegram_id(database_session, login_data.telegram_id)
+    if existing_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
     authenticated_user = authenticate_user(
         database_session,
         login_data.telegram_id,
         login_data.password,
     )
     if authenticated_user is None:
-        # 401 Unauthorized — не говорим что именно неверно (пользователь или пароль)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
