@@ -1,0 +1,69 @@
+version: "3.9"
+
+services:
+
+  # ─── СЕРВИС 1: PostgreSQL ─────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine      # готовый образ PostgreSQL (alpine = меньше размер)
+    container_name: habit_tracker_postgres  # имя контейнера для docker ps
+    environment:
+      # Переменные из файла .env (docker-compose автоматически читает .env)
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # postgres_data — именованный том (volume)
+      # Данные БД сохраняются между перезапусками контейнера
+      # Без volume: при docker-compose down все данные теряются!
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # "5433:5432" — порт хоста:порт контейнера
+      # Позволяет подключиться к БД снаружи Docker (например, из pgAdmin)
+      - "5434:5432"
+    healthcheck:
+      # Docker проверяет: готова ли БД принимать соединения?
+      # backend ждёт пока healthcheck не станет healthy
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s    # проверять каждые 10 секунд
+      timeout: 5s      # ждать ответа максимум 5 секунд
+      retries: 5       # считать "unhealthy" после 5 неудач
+    restart: unless-stopped  # перезапускать автоматически (кроме ручной остановки)
+
+  # ─── СЕРВИС 2: FastAPI Backend ────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend       # папка с исходниками (откуда берём файлы)
+      dockerfile: Dockerfile   # имя Dockerfile (можно опустить если стандартное)
+    container_name: habit_tracker_backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      HABIT_TARGET_DAYS: ${HABIT_TARGET_DAYS}
+      TIMEZONE: ${TIMEZONE}
+    ports:
+      - "8000:8000"  # Swagger доступен на http://localhost:8000/docs
+    depends_on:
+      postgres:
+        condition: service_healthy  # ждём пока postgres будет готов (healthcheck)
+    restart: unless-stopped
+
+  # ─── СЕРВИС 3: Telegram Bot ───────────────────────────────────────────────
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: habit_tracker_bot
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      BACKEND_URL: http://backend:8000
+      TIMEZONE: ${TIMEZONE}
+      HABIT_TARGET_DAYS: ${HABIT_TARGET_DAYS}
+    depends_on:
+      - backend  # ждём пока backend запустится (но без healthcheck)
+    restart: unless-stopped
+
+# Именованные тома — данные сохраняются между перезапусками
+volumes:
+  postgres_data:
